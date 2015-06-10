@@ -1,0 +1,77 @@
+#require "NeoPixels.class.nut:1.0.1"
+
+step <- 0;
+row <- 0;
+col <- 0;
+currentImage <- null;
+  
+stripes <- ["#ff00a7", "#3ED8FB", "#ff00a7", "#3ED8FB", "#ff00a7", "#3ED8FB", "#ff00a7", "#3ED8FB"];
+
+function Hex2RGB(v){
+    local vString = v.tostring().toupper();
+    local hexChars = "0123456789ABCDEF";
+    
+    if(vString.len() == 7){
+        vString = vString.slice(1);
+    }
+    
+    // Make sure it's 6 digits long
+    if(vString.len() == 6)
+    {
+    // Return the new colors
+    return [ (hexChars.find(vString[0].tochar())*16) + hexChars.find(vString[1].tochar()),
+    (hexChars.find(vString[2].tochar())*16) + hexChars.find(vString[3].tochar()),
+    (hexChars.find(vString[4].tochar())*16) + hexChars.find(vString[5].tochar()) ];
+    }
+    
+    // Just return the existing LED colors
+    return [led_r, led_g, led_b];
+}
+// Configure the SPI bus
+
+function RowColumnToIndex(col, row){
+    local indexColumn = col * 8;
+    local indexRow = col % 2 == 1 ? 7 - row : row;
+
+    return indexColumn + indexRow;
+}
+
+function renderStripe(index){
+    local color = Hex2RGB(stripes[index]);
+    // server.log(color[0]);
+    for(local row = 0; row < 8; row++){
+        for(local col = index * 4; col < ((index * 4) + 4); col++){
+            local pix = RowColumnToIndex(col, row);
+            pixels.writePixel(pix , 
+                [(color[0].tofloat() / 255) * 40,
+                (color[1].tofloat() / 255) * 40,
+                (color[2].tofloat() / 255) * 40]
+            );
+            step++;
+        }
+    }  
+}
+hardware.spi257.configure(MSB_FIRST, 7500)
+
+// Instantiate an array of 8 NeoPixels
+
+pixels <- NeoPixels(hardware.spi257, 256);
+
+function updateStrip(){
+    imp.wakeup(0.2, updateStrip);
+    
+    for(local i = 0; i < 8; i++){
+        renderStripe(i);
+    }
+    
+    pixels.writeFrame();
+}
+
+updateStrip();
+
+function addColor(color){
+    stripes = stripes.slice(1);
+    stripes.push(color);
+}
+
+agent.on("newColor", addColor);

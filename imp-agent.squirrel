@@ -1,0 +1,13 @@
+function requestHandler(request, response) {
+      server.log("REQUEST!");
+  // Check if the variable led was passed into the query
+  if ("color" in request.query) {
+      server.log(request.query["color"]);
+    // if it was, send the value of it to the device
+    device.send("newColor", request.query["color"]);
+  }
+  // send a response back to whoever made the request
+  response.send(200, "OK");
+}
+
+http.onrequest(requestHandler);
